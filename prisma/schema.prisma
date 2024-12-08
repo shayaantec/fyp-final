@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+//Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id                 Int           @id @default(autoincrement())
+  email              String        @unique
+  password           String
+  firstName          String
+  lastName           String
+  CNIC               String        @unique
+  age                Int
+  gender             String
+  role               String        @default("STUDENT") // Default role is STUDENT
+  confirmationToken  String?       // Optional, for email confirmation
+  verificationCode   String?       // 4-digit verification code for email verification
+  isConfirmed        Boolean       @default(false) // To track if the user has confirmed their email
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  classes            Class[]       @relation("TeacherClasses") // One-to-many relation with Class
+  enrolledClasses    Enrollment[]  @relation("StudentEnrollments") // Classes enrolled by this user (if role = STUDENT)
+  submissions        Submission[]  @relation("StudentSubmissions") // Submissions made by the student
+}
+
+model Class {
+  id                 Int           @id @default(autoincrement())
+  name               String        // Class name
+  section            String?       // Optional section
+  subject            String?       // Optional subject
+  room               String?       // Optional room or course code
+  classCode          String        @unique // Unique class code for enrollment
+  createdAt          DateTime      @default(now())
+  teacherId          Int           // Foreign key for the teacher
+  teacher            User          @relation(fields: [teacherId], references: [id], name: "TeacherClasses")
+  enrollments        Enrollment[]  @relation("ClassEnrollments") // Students enrolled in the class
+  announcements      Announcement[] // Announcements related to the class
+  activities         Activity[]     // Activities related to the class
+  assignments        Assignment[]   // Assignments related to the class
+}
+
+model Enrollment {
+  id                 Int           @id @default(autoincrement())
+  studentId          Int
+  student            User          @relation("StudentEnrollments", fields: [studentId], references: [id])
+  classId            Int
+  class              Class         @relation("ClassEnrollments", fields: [classId], references: [id])
+  createdAt          DateTime      @default(now())
+}
+
+model Announcement {
+  id                 Int           @id @default(autoincrement())
+  text               String
+  createdAt          DateTime      @default(now())
+  classId            Int
+  class              Class         @relation(fields: [classId], references: [id])
+}
+
+model Activity {
+  id                 Int           @id @default(autoincrement())
+  text               String
+  createdAt          DateTime      @default(now())
+  classId            Int
+  class              Class         @relation(fields: [classId], references: [id])
+}
+
+model Assignment {
+  id                 Int           @id @default(autoincrement())
+  title              String        // Title of the assignment
+  description        String        // Description of the assignment
+  dueDate            DateTime      // Due date for the assignment
+  classId            Int           // Foreign key for the class
+  class              Class         @relation(fields: [classId], references: [id]) // Relation to Class
+  submissions        Submission[]  @relation("AssignmentSubmissions") // Submissions related to this assignment
+  fileUrl            String?       // URL for the uploaded assignment file (optional)
+  createdAt          DateTime      @default(now())
+  
+}
+model Submission {
+  id                 Int           @id @default(autoincrement())
+  studentId          Int           // Foreign key for the student
+  student            User          @relation("StudentSubmissions", fields: [studentId], references: [id])
+  assignmentId       Int           // Foreign key for the assignment
+  assignment         Assignment    @relation("AssignmentSubmissions", fields: [assignmentId], references: [id])
+  fileUrl            String        // URL of the submitted file
+  submittedAt        DateTime      @default(now()) // Timestamp for when the submission was made
+}
