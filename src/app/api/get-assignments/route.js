@@ -4,46 +4,44 @@ const prisma = new PrismaClient();
 
 export async function GET(req) {
   try {
-    // Parse the URL parameters
     const { searchParams } = new URL(req.url);
     const classId = searchParams.get("courseId");
 
     if (!classId) {
-      return new Response(
-        JSON.stringify({ message: 'Class ID is required' }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ message: 'Class ID is required' }), { status: 400 });
     }
 
-    // Fetch assignments related to the courseId
+    // Fetch assignments related to the course
     const assignments = await prisma.assignment.findMany({
       where: { classId: parseInt(classId) },
-      orderBy: { dueDate: 'asc' },  // You can adjust the sorting criteria based on your needs
+      orderBy: { dueDate: 'asc' },
       select: {
         id: true,
         title: true,
         description: true,
         dueDate: true,
-        fileUrl: true, // Assuming the file URL is stored in the fileUrl field
+        fileUrl: true,
+        createdAt: true,
       },
     });
 
-    if (assignments.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No assignments found for this course' }),
-        { status: 404 }
-      );
-    }
+    // Fetch stream items for assignments (ensuring real-time updates)
+    const streamItems = await prisma.stream.findMany({
+      where: { classId: parseInt(classId), type: "assignment" },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        fileUrl: true,
+        createdAt: true,
+      },
+    });
 
-    return new Response(JSON.stringify(assignments), { status: 200 });
+    return new Response(JSON.stringify({ assignments, streamItems }), { status: 200 });
   } catch (error) {
-    // Log the error in a way that avoids invalid argument types
-    console.error("Error occurred while fetching assignments:", error instanceof Error ? error.message : error);
-
-    return new Response(
-      JSON.stringify({ message: 'Failed to fetch assignments', error: error.message || error }),
-      { status: 500 }
-    );
+    console.error("Error occurred while fetching assignments:", error);
+    return new Response(JSON.stringify({ message: 'Failed to fetch assignments' }), { status: 500 });
   } finally {
     await prisma.$disconnect();
   }

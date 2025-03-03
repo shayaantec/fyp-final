@@ -99,6 +99,11 @@ const LoginPage = () => {
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400"
             />
+            <p className="text-right text-sm mt-2">
+              <a href="/forgot-password" className="text-blue-500 hover:underline">
+                Forgot Password?
+              </a>
+            </p>
           </div>
           {error && (
             <p className="text-red-500 text-center text-sm mb-4">{error}</p>

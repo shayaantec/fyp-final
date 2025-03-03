@@ -73,14 +73,11 @@ export default function TeacherDashboard() {
               alt="LeetConnect Logo"
               className="logo-image w-32 h-auto mb-4"
             />
-            <img
-              src="https://via.placeholder.com/120"
-              alt={session?.user?.name || "Profile Image"}
-              className="profile-image w-24 h-24 rounded-full mb-4 shadow-md"
-            />
+            
             <h2 className="text-gray-900 text-xl font-bold text-center">
               {session?.user?.name}
             </h2>
+        
           </div>
           {/* Navigation Menu */}
           <nav className="menu">
@@ -139,6 +136,16 @@ export default function TeacherDashboard() {
               </li>
             </ul>
           </nav>
+        </div>
+         {/* Sign Out Button */}
+         <div className="signout-container mt-8">
+          <button
+            onClick={handleSignOut}
+            className="signout-btn w-full flex items-center gap-4 text-lg py-2 px-4 rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors"
+          >
+            <FontAwesomeIcon icon={faSignOutAlt} className="text-xl" />
+            Sign Out
+          </button>
         </div>
       </aside>
 
@@ -199,17 +206,12 @@ export default function TeacherDashboard() {
         )}
         {currentPage === "archived" && <ArchivedClasses />}
         {currentPage === "messages" && <Messages />} {/* Render Messages Component */}
-        {currentPage === "settings" && <Settings />} {/* Render Settings Component */}
+        {currentPage === "settings" && (
+          <Settings onProfilePictureChange={(updatedPicture) => setProfilePicture(updatedPicture)} />
+        )}
       </main>
 
-      {/* Sign Out Button */}
-      <button
-        onClick={handleSignOut}
-        className="signout-btn fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-red-600 transition-all"
-      >
-        <FontAwesomeIcon icon={faSignOutAlt} className="icon" />
-        Sign Out
-      </button>
+      
     </div>
   );
 }

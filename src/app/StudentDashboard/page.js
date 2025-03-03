@@ -228,6 +228,14 @@ export default function StudentDashboard() {
             </ul>
           </nav>
         </div>
+        {/* Sign Out Button */}
+      <button
+        onClick={handleSignOut}
+        className="fixed bottom-4 right-4 bg-red-500 hover:bg-red-600 text-white text-lg font-bold py-2 px-4 rounded-md shadow-lg flex items-center gap-2 transition-colors"
+      >
+        <FontAwesomeIcon icon={faSignOutAlt} className="text-xl" />
+        Sign Out
+      </button>
       </aside>
 
       {/* Main Content */}
@@ -296,16 +304,9 @@ export default function StudentDashboard() {
         {currentView === "forum" && <Forum />}
         {currentView === "archived" && <ArchivedClasses />}
         {currentView === "settings" && <Settings />}
+          
       </main>
 
-      {/* Sign Out Button */}
-      <button
-        onClick={handleSignOut}
-        className="fixed bottom-4 right-4 bg-red-500 hover:bg-red-600 text-white text-lg font-bold py-2 px-4 rounded-md shadow-lg flex items-center gap-2 transition-colors"
-      >
-        <FontAwesomeIcon icon={faSignOutAlt} className="text-xl" />
-        Sign Out
-      </button>
 
       {showEnrollModal && <EnrollClass onClose={handleCloseModal} />}
     </div>

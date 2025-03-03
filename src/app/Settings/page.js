@@ -1,108 +1,199 @@
-'use client';
+"use client";
 
-import React, { useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faLock, faBell, faPaintBrush, faSave } from "@fortawesome/free-solid-svg-icons";
+import React, { useState, useEffect } from "react";
+import { useSession, signIn } from "next-auth/react";
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("John Doe");
+  const { data: session, status } = useSession();
+  const [user, setUser] = useState(null);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    age: "",
+    gender: "",
+    profilePicture: null,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSaveSettings = () => {
-    // Add your logic for saving settings
-    alert("Settings saved!");
+  // Fetch user data when authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      const fetchUser = async () => {
+        const res = await fetch("/api/user");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+          setFormData({
+            firstName: data.firstName || "",
+            lastName: data.lastName || "",
+            age: data.age || "",
+            gender: data.gender || "",
+            profilePicture: data.profilePicture || null,
+          });
+        }
+      };
+
+      fetchUser();
+    }
+  }, [status]);
+
+  // Handle form input changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  return (
-    <div className="settings-container flex flex-col space-y-8">
-      {/* Header */}
-      <div className="settings-header flex items-center justify-between mb-8">
-        <h2 className="text-3xl font-semibold">Settings</h2>
+  // Handle profile picture upload
+  const handleProfilePictureUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => setFormData((prev) => ({ ...prev, profilePicture: reader.result }));
+    reader.readAsDataURL(file);
+  };
+
+  // Save settings
+  const handleSaveSettings = async () => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        const updatedUser = await res.json();
+        setUser(updatedUser);
+        alert("Settings updated successfully!");
+      } else {
+        const error = await res.json();
+        alert(error.message || "Failed to update settings.");
+      }
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      alert("An error occurred while updating settings.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (status !== "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>You need to sign in to view this page.</p>
         <button
-          onClick={handleSaveSettings}
-          className="save-button bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-md flex items-center gap-2"
+          className="bg-blue-500 text-white px-4 py-2 rounded-md"
+          onClick={() => signIn()}
         >
-          <FontAwesomeIcon icon={faSave} />
-          Save
+          Sign In
         </button>
       </div>
+    );
+  }
 
-      {/* Account Settings */}
-      <div className="account-settings bg-white p-6 rounded-lg shadow-lg">
-        <h3 className="text-2xl font-semibold mb-4">Account Settings</h3>
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-2" htmlFor="username">
-            Username
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-3xl font-bold text-center mb-6">Settings</h2>
+
+        {/* Profile Picture */}
+        <div className="mb-6 flex flex-col items-center">
+          {formData.profilePicture ? (
+            <img
+              src={formData.profilePicture}
+              alt="Profile"
+              className="w-32 h-32 rounded-full mb-4 object-cover"
+            />
+          ) : (
+            <div className="w-32 h-32 bg-gray-200 rounded-full mb-4 flex items-center justify-center text-gray-500">
+              No Image
+            </div>
+          )}
+          <label
+            htmlFor="profilePictureUpload"
+            className="bg-blue-500 text-white px-4 py-2 rounded-md cursor-pointer hover:bg-blue-600"
+          >
+            Upload
           </label>
+          <input
+            type="file"
+            id="profilePictureUpload"
+            accept="image/*"
+            className="hidden"
+            onChange={handleProfilePictureUpload}
+          />
+        </div>
+
+        {/* User Information */}
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">First Name</label>
           <input
             type="text"
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="input-field w-full p-3 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
           />
         </div>
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-2" htmlFor="password">
-            Password
-          </label>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Last Name</label>
           <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input-field w-full p-3 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            type="text"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
           />
         </div>
-      </div>
 
-      {/* Notification Settings */}
-      <div className="notification-settings bg-white p-6 rounded-lg shadow-lg">
-        <h3 className="text-2xl font-semibold mb-4">Notification Settings</h3>
-        <div className="flex items-center justify-between">
-          <label className="text-gray-700 font-medium" htmlFor="emailNotifications">
-            Email Notifications
-          </label>
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Age</label>
           <input
-            type="checkbox"
-            id="emailNotifications"
-            checked={emailNotifications}
-            onChange={() => setEmailNotifications(!emailNotifications)}
-            className="toggle-checkbox"
+            type="number"
+            name="age"
+            value={formData.age}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
           />
         </div>
-      </div>
 
-      {/* Theme Settings */}
-      <div className="theme-settings bg-white p-6 rounded-lg shadow-lg">
-        <h3 className="text-2xl font-semibold mb-4">Theme Settings</h3>
-        <div className="flex items-center justify-between">
-          <label className="text-gray-700 font-medium" htmlFor="darkMode">
-            Dark Mode
-          </label>
-          <input
-            type="checkbox"
-            id="darkMode"
-            checked={darkMode}
-            onChange={() => setDarkMode(!darkMode)}
-            className="toggle-checkbox"
-          />
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Gender</label>
+          <select
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
         </div>
-      </div>
 
-      {/* Divider */}
-      <div className="divider my-6"></div>
-
-      {/* Footer */}
-      <div className="footer flex items-center justify-center">
-        <button
-          onClick={() => alert("You have logged out!")}
-          className="logout-button text-red-500 hover:text-red-600 font-semibold"
-        >
-          Log Out
-        </button>
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={handleSaveSettings}
+            disabled={isSubmitting}
+            className={`${
+              isSubmitting ? "bg-gray-400" : "bg-green-500"
+            } text-white px-6 py-2 rounded-md hover:bg-green-600`}
+          >
+            {isSubmitting ? "Saving..." : "Save Settings"}
+          </button>
+        </div>
       </div>
     </div>
   );
